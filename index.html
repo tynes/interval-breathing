@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breathing Interval Timer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem 0;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+        }
+        h1 {
+            font-weight: 300;
+            margin-bottom: 2rem;
+            color: #aaa;
+        }
+        .presets {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .preset-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #444;
+            background: transparent;
+            color: #aaa;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preset-btn:hover {
+            border-color: #666;
+            color: #fff;
+        }
+        .preset-btn.active {
+            background: #4a4a6a;
+            border-color: #6a6a9a;
+            color: #fff;
+        }
+        .gap-setting {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+        }
+        .gap-label {
+            color: #666;
+            font-size: 0.85rem;
+            margin-right: 0.3rem;
+        }
+        .control-btn {
+            padding: 0.3rem 0.6rem;
+            border: 1px solid #333;
+            background: transparent;
+            color: #666;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .control-btn:hover {
+            border-color: #555;
+            color: #aaa;
+        }
+        .control-btn.active {
+            background: #3a3a4a;
+            border-color: #5a5a7a;
+            color: #ccc;
+        }
+        .bars-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 0.6rem;
+            margin: 3rem 0;
+        }
+        .phase {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.4rem;
+        }
+        .gap {
+            width: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gap-indicator {
+            width: 10px;
+            height: 10px;
+            background: #333;
+            border-radius: 50%;
+            transition: all 0.15s;
+        }
+        .gap-indicator.active {
+            background: #f39c12;
+            box-shadow: 0 0 12px #f39c12;
+            transform: scale(1.3);
+        }
+        .control-indicator {
+            width: 10px;
+            height: 10px;
+            background: #333;
+            border-radius: 50%;
+            transition: all 0.15s;
+        }
+        .control-indicator.active {
+            background: #e74c3c;
+            box-shadow: 0 0 12px #e74c3c;
+            transform: scale(1.3);
+        }
+        .bar {
+            width: 8px;
+            height: 60px;
+            background: #3a4a5a;
+            border-radius: 2px;
+            transition: all 0.15s;
+        }
+        .bar.active {
+            background: #5dade2;
+            box-shadow: 0 0 10px #5dade2;
+            transform: scaleY(1.1);
+        }
+        .bar.phase2 {
+            background: #3a5a4a;
+            height: 50px;
+            border-radius: 4px;
+        }
+        .bar.phase2.active {
+            background: #58d68d;
+            box-shadow: 0 0 10px #58d68d;
+        }
+        .bar.done {
+            background: #555;
+        }
+        .controls {
+            margin-top: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+        }
+        .start-btn {
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 6px;
+            background: #5dade2;
+            color: #1a1a2e;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .start-btn:hover {
+            background: #85c1e9;
+            transform: scale(1.02);
+        }
+        .reset-btn {
+            padding: 0.8rem;
+            font-size: 1.1rem;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: transparent;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .reset-btn:hover {
+            border-color: #666;
+            color: #aaa;
+        }
+        .session-timer {
+            margin-top: 1.5rem;
+            font-size: 2rem;
+            font-weight: 300;
+            color: #5dade2;
+            font-variant-numeric: tabular-nums;
+        }
+        .advanced-setting {
+            margin-top: 1.5rem;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: #666;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .checkbox-label input {
+            cursor: pointer;
+        }
+        .checkbox-label:hover {
+            color: #888;
+        }
+        .tooltip-wrapper {
+            position: relative;
+            display: inline-flex;
+            margin-left: 0.3rem;
+        }
+        .tooltip-icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid #555;
+            font-size: 0.65rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            cursor: help;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 130%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a2a3e;
+            color: #aaa;
+            padding: 0.6rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            width: 220px;
+            text-align: center;
+            line-height: 1.4;
+            border: 1px solid #444;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+        .tooltip-wrapper:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        .custom-duration {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        .custom-pause {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+        .pause-input {
+            width: 50px;
+        }
+        .custom-inputs {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .duration-input {
+            width: 60px;
+            padding: 0.3rem 0.5rem;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #2a2a3e;
+            color: #ccc;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        .duration-input:focus {
+            outline: none;
+            border-color: #5dade2;
+        }
+        .duration-input::-webkit-outer-spin-button,
+        .duration-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .duration-input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .duration-input::placeholder {
+            color: #555;
+        }
+        .apply-btn {
+            padding: 0.3rem 0.7rem;
+            border: 1px solid #444;
+            background: transparent;
+            color: #666;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            margin-left: 0.3rem;
+        }
+        .apply-btn:hover {
+            border-color: #5dade2;
+            color: #5dade2;
+        }
+        .footer {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #333;
+            font-size: 0.75rem;
+            color: #555;
+            line-height: 1.6;
+        }
+        .footer a {
+            color: #666;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            color: #888;
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                align-items: flex-start;
+                padding: 0.5rem 0 2rem;
+            }
+            .container {
+                padding: 1.5rem 1rem;
+            }
+            h1 {
+                font-size: 1.4rem;
+                margin-bottom: 1.5rem;
+            }
+            .presets {
+                display: grid;
+                grid-template-columns: repeat(3, auto);
+                gap: 0.4rem;
+                margin-bottom: 1.5rem;
+                justify-content: center;
+            }
+            .preset-btn {
+                padding: 0.4rem 0.7rem;
+                font-size: 0.85rem;
+            }
+            .gap-setting {
+                flex-wrap: wrap;
+                gap: 0.3rem;
+            }
+            .bars-container {
+                margin: 2rem 0;
+            }
+            .bar {
+                width: 6px;
+                height: 50px;
+            }
+            .bar.phase2 {
+                height: 42px;
+            }
+            .session-timer {
+                font-size: 1.6rem;
+            }
+            .custom-duration {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .custom-pause {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .custom-inputs {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.4rem;
+            }
+            .duration-input {
+                width: 55px;
+            }
+            .advanced-setting {
+                margin-top: 0.8rem;
+            }
+            .checkbox-label {
+                gap: 0.4rem;
+            }
+            .checkbox-label span:not(.tooltip-wrapper):not(.tooltip-icon):not(.tooltip-text) {
+                text-align: center;
+            }
+            .tooltip-text {
+                width: 180px;
+                font-size: 0.7rem;
+            }
+            .footer {
+                margin-top: 2rem;
+                font-size: 0.7rem;
+            }
+        }
+        .start-btn:disabled {
+            background: #444;
+            color: #888;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            margin-top: 1.5rem;
+            font-size: 1.2rem;
+            color: #888;
+            height: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Breathing Interval Timer</h1>
+        
+        <div class="presets">
+            <button class="preset-btn active" data-first="4" data-second="6">4s / 6s</button>
+            <button class="preset-btn" data-first="6" data-second="6">6s / 6s</button>
+            <button class="preset-btn" data-first="5" data-second="6">5s / 6s</button>
+            <button class="preset-btn" data-first="5" data-second="7">5s / 7s</button>
+            <button class="preset-btn" data-first="5" data-second="5">5s / 5s</button>
+            <button class="preset-btn" data-first="4" data-second="5">4s / 5s</button>
+        </div>
+        
+        <div class="gap-setting">
+            <span class="gap-label">Pause:</span>
+            <button class="control-btn active" data-control="0">0</button>
+            <button class="control-btn" data-control="1000">1s</button>
+            <button class="control-btn" data-control="2000">2s</button>
+            <button class="control-btn" data-control="3000">3s</button>
+        </div>
+        
+        <div class="bars-container">
+            <div class="phase" id="phase1"></div>
+            <div class="gap" id="gapContainer"><div class="gap-indicator" id="gapIndicator"></div></div>
+            <div class="phase" id="phase2"></div>
+            <div class="gap" id="controlContainer"><div class="control-indicator" id="controlIndicator"></div></div>
+        </div>
+        
+        <div class="controls">
+            <button class="start-btn" id="startBtn">Start</button>
+            <button class="reset-btn" id="resetBtn">↺</button>
+        </div>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="session-timer" id="sessionTimer">20:00</div>
+        
+        <div class="custom-duration">
+            <span class="gap-label custom-label">Custom interval:</span>
+            <div class="custom-inputs">
+                <input type="number" id="customInhale" min="1" max="10" placeholder="Inhale" class="duration-input">
+                <span class="gap-label">s /</span>
+                <input type="number" id="customExhale" min="1" max="10" placeholder="Exhale" class="duration-input">
+                <span class="gap-label">s</span>
+                <button class="apply-btn" id="applyCustom">Apply</button>
+                <span class="tooltip-wrapper">
+                    <span class="tooltip-icon">?</span>
+                    <span class="tooltip-text">Enter custom inhale and exhale durations from 1 to 10 seconds each.</span>
+                </span>
+            </div>
+        </div>
+        
+        <div class="custom-pause">
+            <span class="gap-label">Custom pause:</span>
+            <div class="custom-inputs">
+                <input type="number" id="customPause" min="0" placeholder="sec" class="duration-input pause-input">
+                <span class="gap-label">s</span>
+                <button class="apply-btn" id="applyPause">Apply</button>
+                <span class="tooltip-wrapper">
+                    <span class="tooltip-icon">?</span>
+                    <span class="tooltip-text">Hold your breath after exhaling. Enter any duration in seconds (0 to skip).</span>
+                </span>
+            </div>
+        </div>
+        
+        <div class="advanced-setting">
+            <label class="checkbox-label">
+                <input type="checkbox" id="separateSounds">
+                <span>Separate inhale/exhale sound</span>
+                <span class="tooltip-wrapper">
+                    <span class="tooltip-icon">?</span>
+                    <span class="tooltip-text">When enabled, uses a higher tone for inhale and a lower, warmer tone for exhale.</span>
+                </span>
+            </label>
+        </div>
+        
+        <div class="advanced-setting">
+            <label class="checkbox-label">
+                <input type="checkbox" id="advancedMode">
+                <span>Separate gap before each inhale/exhale</span>
+                <span class="tooltip-wrapper">
+                    <span class="tooltip-icon">?</span>
+                    <span class="tooltip-text">When enabled, adds a short 1/8 second beep and visual indicator between phases instead of beeping on the first beat of each phase.</span>
+                </span>
+            </label>
+        </div>
+        
+        <div class="footer">
+            Based on article <a href="https://breatheless.substack.com/p/the-only-breathwork-exercise-you" target="_blank">"The Only Breathwork Exercise You'll Ever Need"</a> by <a href="https://x.com/BreatheLesss" target="_blank">@BreatheLesss</a><br>
+            App by <a href="https://x.com/xHitsujikai" target="_blank">@xHitsujikai</a><br>
+            <a href="https://github.com/tynes/interval-breathing" target="_blank">Source code</a>
+        </div>
+    </div>
+
+    <script>
+        let firstDuration = 4;
+        let secondDuration = 6;
+        let gapDuration = 125;
+        let controlDuration = 0;
+        let advancedMode = false;
+        let separateSounds = false;
+        let isRunning = false;
+        let isPaused = false;
+        let audioCtx = null;
+        
+        let sessionDuration = 20 * 60 * 1000; // 20 minutes in ms
+        let sessionRemaining = sessionDuration;
+        let sessionInterval = null;
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (e) {}
+        }
+
+        function releaseWakeLock() {
+            if (wakeLock) {
+                wakeLock.release();
+                wakeLock = null;
+            }
+        }
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playBeepInhale() {
+            initAudio();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.frequency.value = 680;
+            oscillator.type = 'sine';
+            
+            // Soft attack and decay for gentler sound
+            gainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.03);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.22);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.22);
+        }
+
+        function playBeepExhale() {
+            initAudio();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.frequency.value = 540;
+            oscillator.type = 'sine';
+            
+            // Similar to inhale but slightly lower
+            gainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.03);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.25);
+        }
+
+        function playBeep() {
+            initAudio();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.frequency.value = 660;
+            oscillator.type = 'sine';
+            
+            // Soft attack and decay for gentler sound
+            gainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.03);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.25);
+        }
+
+        function playBeepLow() {
+            initAudio();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.frequency.value = 330;
+            oscillator.type = 'sine';
+            
+            // Soft attack and decay for gentler sound
+            gainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 0.04);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function playCompletionSound() {
+            initAudio();
+            // Play a gentle chime sequence
+            const notes = [523, 659, 784]; // C5, E5, G5
+            notes.forEach((freq, i) => {
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = freq;
+                oscillator.type = 'sine';
+                
+                const startTime = audioCtx.currentTime + i * 0.2;
+                gainNode.gain.setValueAtTime(0.3, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4);
+                
+                oscillator.start(startTime);
+                oscillator.stop(startTime + 0.4);
+            });
+        }
+
+        function updateSessionDisplay() {
+            const minutes = Math.floor(sessionRemaining / 60000);
+            const seconds = Math.floor((sessionRemaining % 60000) / 1000);
+            document.getElementById('sessionTimer').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function startSessionTimer() {
+            const startTime = Date.now();
+            const initialRemaining = sessionRemaining;
+            
+            sessionInterval = setInterval(() => {
+                if (!isRunning) return;
+                
+                sessionRemaining = initialRemaining - (Date.now() - startTime);
+                
+                if (sessionRemaining <= 0) {
+                    sessionRemaining = 0;
+                    updateSessionDisplay();
+                    stopTimer();
+                    playCompletionSound();
+                    setStatus('Complete!');
+                    return;
+                }
+                
+                updateSessionDisplay();
+            }, 100);
+        }
+
+        function stopSessionTimer() {
+            if (sessionInterval) {
+                clearInterval(sessionInterval);
+                sessionInterval = null;
+            }
+        }
+
+        function resetSession() {
+            stopTimer();
+            sessionRemaining = sessionDuration;
+            updateSessionDisplay();
+            resetBars();
+            setStatus('');
+        }
+
+        function stopTimer() {
+            isRunning = false;
+            stopSessionTimer();
+            releaseWakeLock();
+            updateButton();
+        }
+
+        function createBars() {
+            const phase1 = document.getElementById('phase1');
+            const phase2 = document.getElementById('phase2');
+            
+            phase1.innerHTML = '';
+            phase2.innerHTML = '';
+            
+            for (let i = 0; i < firstDuration; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.dataset.index = i;
+                phase1.appendChild(bar);
+            }
+            
+            for (let i = 0; i < secondDuration; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar phase2';
+                bar.dataset.index = i;
+                phase2.appendChild(bar);
+            }
+        }
+
+        function resetBars() {
+            document.querySelectorAll('.bar').forEach(bar => {
+                bar.classList.remove('active', 'done');
+            });
+            document.getElementById('gapIndicator').classList.remove('active');
+            document.getElementById('controlIndicator').classList.remove('active');
+        }
+
+        function setStatus(text) {
+            document.getElementById('status').textContent = text;
+        }
+
+        function updateButton() {
+            const startBtn = document.getElementById('startBtn');
+            if (isRunning) {
+                startBtn.textContent = 'Pause';
+            } else {
+                startBtn.textContent = 'Start';
+            }
+        }
+
+        async function runTimer() {
+            initAudio();
+            
+            const phase1Bars = document.querySelectorAll('#phase1 .bar');
+            const phase2Bars = document.querySelectorAll('#phase2 .bar');
+            const gapIndicator = document.getElementById('gapIndicator');
+            const controlIndicator = document.getElementById('controlIndicator');
+            
+            while (isRunning) {
+                resetBars();
+                
+                // Phase 1 (Inhale)
+                setStatus('Inhale');
+                for (let i = 0; i < firstDuration && isRunning; i++) {
+                    if (i === 0 && !advancedMode) {
+                        separateSounds ? playBeepInhale() : playBeep();
+                    }
+                    phase1Bars[i].classList.add('active');
+                    await sleep(1000);
+                    if (!isRunning) break;
+                    phase1Bars[i].classList.remove('active');
+                    phase1Bars[i].classList.add('done');
+                }
+                
+                if (!isRunning) break;
+                
+                // Gap/transition (only in advanced mode)
+                if (advancedMode) {
+                    separateSounds ? playBeepExhale() : playBeep();
+                    setStatus('');
+                    gapIndicator.classList.add('active');
+                    await sleep(gapDuration);
+                    gapIndicator.classList.remove('active');
+                    
+                    if (!isRunning) break;
+                }
+                
+                // Phase 2 (Exhale)
+                setStatus('Exhale');
+                for (let i = 0; i < secondDuration && isRunning; i++) {
+                    if (i === 0 && !advancedMode) {
+                        separateSounds ? playBeepExhale() : playBeep();
+                    }
+                    phase2Bars[i].classList.add('active');
+                    await sleep(1000);
+                    if (!isRunning) break;
+                    phase2Bars[i].classList.remove('active');
+                    phase2Bars[i].classList.add('done');
+                }
+                
+                if (!isRunning) break;
+                
+                // Control pause before restarting (skip if 0)
+                if (controlDuration > 0) {
+                    playBeepLow();
+                    setStatus('Hold...');
+                    controlIndicator.classList.add('active');
+                    await sleep(controlDuration);
+                    controlIndicator.classList.remove('active');
+                    if (!isRunning) break;
+                }
+                
+                // Beep before restarting phase 1 (only in advanced mode)
+                if (advancedMode) {
+                    separateSounds ? playBeepInhale() : playBeep();
+                    setStatus('Restart');
+                    gapIndicator.classList.add('active');
+                    await sleep(gapDuration);
+                    gapIndicator.classList.remove('active');
+                }
+            }
+            
+            setStatus('Paused');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function toggleTimer() {
+            if (isRunning) {
+                isRunning = false;
+                stopSessionTimer();
+                releaseWakeLock();
+                updateButton();
+            } else {
+                isRunning = true;
+                updateButton();
+                requestWakeLock();
+                startSessionTimer();
+                runTimer();
+            }
+        }
+
+        // Preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (isRunning) return;
+                
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                firstDuration = parseInt(btn.dataset.first);
+                secondDuration = parseInt(btn.dataset.second);
+                
+                // Clear custom inputs
+                document.getElementById('customInhale').value = '';
+                document.getElementById('customExhale').value = '';
+                
+                createBars();
+                setStatus('');
+            });
+        });
+
+        // Control pause duration buttons
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                controlDuration = parseInt(btn.dataset.control);
+                document.getElementById('controlContainer').style.display = controlDuration > 0 ? 'flex' : 'none';
+                
+                // Clear custom pause input
+                document.getElementById('customPause').value = '';
+            });
+        });
+
+        // Custom pause apply button
+        document.getElementById('applyPause').addEventListener('click', () => {
+            const pauseInput = document.getElementById('customPause');
+            const pauseVal = parseFloat(pauseInput.value);
+            
+            if (!isNaN(pauseVal) && pauseVal >= 0) {
+                controlDuration = Math.round(pauseVal * 1000);
+                
+                // Deselect preset buttons
+                document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+                
+                // Show/hide control indicator
+                document.getElementById('controlContainer').style.display = controlDuration > 0 ? 'flex' : 'none';
+            }
+        });
+
+        // Start button
+        document.getElementById('startBtn').addEventListener('click', toggleTimer);
+
+        // Reset button
+        document.getElementById('resetBtn').addEventListener('click', resetSession);
+
+        // Advanced mode checkbox
+        document.getElementById('advancedMode').addEventListener('change', (e) => {
+            advancedMode = e.target.checked;
+            document.getElementById('gapContainer').style.display = advancedMode ? 'flex' : 'none';
+        });
+
+        // Separate sounds checkbox
+        document.getElementById('separateSounds').addEventListener('change', (e) => {
+            separateSounds = e.target.checked;
+        });
+
+        // Custom duration apply button
+        document.getElementById('applyCustom').addEventListener('click', () => {
+            if (isRunning) return;
+            
+            const inhaleInput = document.getElementById('customInhale');
+            const exhaleInput = document.getElementById('customExhale');
+            
+            const inhaleVal = parseInt(inhaleInput.value);
+            const exhaleVal = parseInt(exhaleInput.value);
+            
+            if (inhaleVal >= 1 && inhaleVal <= 10 && exhaleVal >= 1 && exhaleVal <= 10) {
+                firstDuration = inhaleVal;
+                secondDuration = exhaleVal;
+                
+                // Deselect preset buttons
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                
+                createBars();
+                setStatus('');
+            }
+        });
+
+        // Initialize
+        createBars();
+        updateSessionDisplay();
+        document.getElementById('gapContainer').style.display = 'none';
+        document.getElementById('controlContainer').style.display = 'none';
+    </script>
+</body>
+</html>
