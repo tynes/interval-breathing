@@ -521,6 +521,9 @@
         let separateSounds = false;
         let isRunning = false;
         let isPaused = false;
+        let resumeResolver = null;
+        let sessionAnchorTime = null;
+        let sessionAnchorRemaining = 0;
         let audioCtx = null;
         
         let sessionDuration = 20 * 60 * 1000; // 20 minutes in ms
@@ -660,14 +663,16 @@
         }
 
         function startSessionTimer() {
-            const startTime = Date.now();
-            const initialRemaining = sessionRemaining;
-            
+            // Only create the interval once; it lives across pauses (the "existing timer").
+            // Pauses are handled by nulling sessionAnchorTime so the callback skips.
+            if (sessionInterval) return;
+
             sessionInterval = setInterval(() => {
-                if (!isRunning) return;
-                
-                sessionRemaining = initialRemaining - (Date.now() - startTime);
-                
+                if (!isRunning || isPaused || !sessionAnchorTime) return;
+
+                const elapsed = Date.now() - sessionAnchorTime;
+                sessionRemaining = Math.max(0, sessionAnchorRemaining - elapsed);
+
                 if (sessionRemaining <= 0) {
                     sessionRemaining = 0;
                     updateSessionDisplay();
@@ -676,7 +681,7 @@
                     setStatus('Complete!');
                     return;
                 }
-                
+
                 updateSessionDisplay();
             }, 100);
         }
@@ -698,9 +703,28 @@
 
         function stopTimer() {
             isRunning = false;
+            isPaused = false;
             stopSessionTimer();
+            sessionAnchorTime = null;
+            sessionAnchorRemaining = 0;
+            forceUnblockWaiter();
             releaseWakeLock();
             updateButton();
+        }
+
+        function waitWhilePaused() {
+            if (!isPaused) return Promise.resolve();
+            return new Promise(resolve => {
+                resumeResolver = resolve;
+            });
+        }
+
+        function forceUnblockWaiter() {
+            isPaused = false;
+            if (resumeResolver) {
+                resumeResolver();
+                resumeResolver = null;
+            }
         }
 
         function createBars() {
@@ -739,10 +763,12 @@
 
         function updateButton() {
             const startBtn = document.getElementById('startBtn');
-            if (isRunning) {
-                startBtn.textContent = 'Pause';
-            } else {
+            if (!isRunning) {
                 startBtn.textContent = 'Start';
+            } else if (isPaused) {
+                startBtn.textContent = 'Resume';
+            } else {
+                startBtn.textContent = 'Pause';
             }
         }
 
@@ -755,6 +781,9 @@
             const controlIndicator = document.getElementById('controlIndicator');
             
             while (isRunning) {
+                await waitWhilePaused();
+                if (!isRunning) break;
+
                 resetBars();
                 
                 // Phase 1 (Inhale)
@@ -765,6 +794,7 @@
                     }
                     phase1Bars[i].classList.add('active');
                     await sleep(1000);
+                    await waitWhilePaused();
                     if (!isRunning) break;
                     phase1Bars[i].classList.remove('active');
                     phase1Bars[i].classList.add('done');
@@ -778,6 +808,7 @@
                     setStatus('');
                     gapIndicator.classList.add('active');
                     await sleep(gapDuration);
+                    await waitWhilePaused();
                     gapIndicator.classList.remove('active');
                     
                     if (!isRunning) break;
@@ -791,6 +822,7 @@
                     }
                     phase2Bars[i].classList.add('active');
                     await sleep(1000);
+                    await waitWhilePaused();
                     if (!isRunning) break;
                     phase2Bars[i].classList.remove('active');
                     phase2Bars[i].classList.add('done');
@@ -804,6 +836,7 @@
                     setStatus('Hold...');
                     controlIndicator.classList.add('active');
                     await sleep(controlDuration);
+                    await waitWhilePaused();
                     controlIndicator.classList.remove('active');
                     if (!isRunning) break;
                 }
@@ -814,11 +847,10 @@
                     setStatus('Restart');
                     gapIndicator.classList.add('active');
                     await sleep(gapDuration);
+                    await waitWhilePaused();
                     gapIndicator.classList.remove('active');
                 }
             }
-            
-            setStatus('Paused');
         }
 
         function sleep(ms) {
@@ -826,16 +858,40 @@
         }
 
         function toggleTimer() {
-            if (isRunning) {
-                isRunning = false;
-                stopSessionTimer();
-                releaseWakeLock();
+            if (isPaused) {
+                // Resume existing timers (do not spawn new runTimer or interval)
+                isPaused = false;
+                sessionAnchorRemaining = sessionRemaining;
+                sessionAnchorTime = Date.now();
+                requestWakeLock();
                 updateButton();
+                if (resumeResolver) {
+                    resumeResolver();
+                    resumeResolver = null;
+                }
+            } else if (isRunning) {
+                // Pause: freeze session anchor so countdown does not advance; keep runTimer parked
+                isPaused = true;
+                if (sessionAnchorTime) {
+                    const elapsed = Date.now() - sessionAnchorTime;
+                    sessionRemaining = Math.max(0, sessionAnchorRemaining - elapsed);
+                }
+                sessionAnchorTime = null;
+                releaseWakeLock();
+                setStatus('Paused');
+                updateButton();
+                // runTimer continues to exist; it will hit waitWhilePaused and park
             } else {
+                // Fresh start after reset/clear or first load — spawn the (one) breathing loop + ticker
                 isRunning = true;
+                isPaused = false;
                 updateButton();
                 requestWakeLock();
-                startSessionTimer();
+                sessionAnchorRemaining = sessionRemaining;
+                sessionAnchorTime = Date.now();
+                if (!sessionInterval) {
+                    startSessionTimer();
+                }
                 runTimer();
             }
         }
