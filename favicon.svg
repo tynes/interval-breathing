@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Dark navy background matching the app -->
+  <rect width="32" height="32" rx="6" fill="#1a1a2e"/>
+  
+  <!-- Clean, minimal lungs icon - bold shapes for small sizes -->
+  <g fill="#5dade2">
+    <!-- Left lung lobe (ellipse + bottom adjustment for classic lung shape) -->
+    <ellipse cx="10.5" cy="15" rx="4.5" ry="8"/>
+    <!-- Right lung lobe -->
+    <ellipse cx="21.5" cy="15" rx="4.5" ry="8"/>
+    
+    <!-- Trachea -->
+    <rect x="14.5" y="5.5" width="3" height="5.5" rx="1" fill="#5dade2"/>
+    
+    <!-- Subtle center line / separation between lobes (optional, helps definition) -->
+    <rect x="15.3" y="10" width="1.4" height="11" rx="0.7" fill="#1a1a2e" opacity="0.25"/>
+  </g>
+</svg>
